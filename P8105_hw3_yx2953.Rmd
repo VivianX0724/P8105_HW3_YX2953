@@ -1,0 +1,180 @@
+---
+title: "P8105_HW3_YX2953"
+author: "Vivian XIA"
+date: "2024-10-13"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Problem 2
+
+```{r}
+# Load required libraries
+library(tidyverse)
+
+# Load the datasets
+covar_path <- "Data File/nhanes_covar.csv"
+accel_path <- "Data File/nhanes_accel.csv"
+
+# Step 1: Clean and prepare demographic data, filter out the participants less than 21 and delete the missing ones
+covar_df <- read_csv(covar_path, skip = 4)
+colnames(covar_df) <- c("SEQN","SEX", "AGE", "BMI", "EDUCATION")
+covar_df <- covar_df %>%
+  mutate(
+   seqn = as.integer(SEQN),
+    sex = factor(SEX, levels = c(1, 2), labels = c("Male", "Female")),
+    age = as.numeric(AGE),
+    BMI = as.numeric(BMI),
+    education = factor(EDUCATION, levels = c(1, 2, 3), 
+                       labels = c("Less than high school", 
+                                  "High school equivalent", 
+                                  "More than high school"))
+  )%>%
+filter(age >= 21)%>%
+drop_na()
+
+# Step 2: Load and prepare accelerometer data
+accel_df <- read_csv(accel_path)
+
+# Step 3: Merge accelerometer data with demographic data
+merged_df <- inner_join(accel_df, covar_df, by = "SEQN")
+
+# Step 4: Create a summary table of men and women by education level
+summary_table <- merged_df %>%
+  group_by(education, sex) %>%
+  summarise(count = n()) %>%
+  pivot_wider(names_from = sex, values_from = count, values_fill = 0)
+
+# Display the summary table
+print(summary_table)
+
+# Step 5: Plot age distribution by sex and education
+ggplot(merged_df, aes(x = age, fill = sex)) +
+  geom_histogram(position = "dodge", bins = 20) +
+  facet_wrap(~ education) +
+  labs(title = "Age Distribution by Sex and Education",
+       x = "Age", y = "Count") +
+  theme_minimal()
+
+# Step 6: Create total activity for each participant by summing across minutes
+merged_df <- merged_df %>%
+  mutate(total_activity = rowSums(select(., starts_with("min"))))
+
+# Step 7: Plot total activity against age, faceted by education and colored by sex
+ggplot(merged_df, aes(x = age, y = total_activity, color = sex)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "loess") +
+  facet_wrap(~ education) +
+  labs(title = "Total Activity vs. Age by Sex and Education",
+       x = "Age", y = "Total Activity") +
+  theme_minimal()
+
+# Step 8: Create a time-course plot of activity over a 24-hour period, colored by sex
+merged_df_long <- merged_df %>%
+  pivot_longer(
+    cols = starts_with("min"),
+    names_to = "minute",
+    values_to = "activity",
+    names_prefix = "min"
+  ) %>%
+  mutate(minute = as.numeric(minute))
+
+ggplot(merged_df_long, aes(x = minute, y = activity, color = sex)) +
+  geom_line(stat = "smooth", method = "loess", se = FALSE) +
+  facet_wrap(~ education) +
+  labs(title = "24-Hour Activity Time Course by Education and Sex",
+       x = "Minute of the Day", y = "Activity (MIMS)") +
+  theme_minimal()
+```
+
+Problem 3
+
+```{r}
+# Load required libraries
+library(tidyverse)
+
+files <- list(
+  july_2024 = read_csv("Data File/July 2024 Citi.csv", show_col_types = FALSE),
+  jan_2020 = read_csv("Data File/Jan 2020 Citi.csv", show_col_types = FALSE),
+  jan_2024 = read_csv("Data File/Jan 2024 Citi.csv", show_col_types = FALSE),
+  july_2020 = read_csv("Data File/July 2020 Citi.csv", show_col_types = FALSE)
+)
+
+# Add a 'source' column to track the original file
+names(data_list) <- names(files)
+data_list <- lapply(names(data_list), function(name) {
+  df <- data_list[[name]]
+  df$source <- name
+  return(df)
+})
+
+# Combine all datasets into one
+combined_data <- bind_rows(data_list) 
+glimpse(combined_data)
+
+combined_data %>%
+  count(source)
+
+combined_data
+
+```
+```{r}
+# create summary table, total rides by year, month, user type
+
+combined_data <- combined_data %>%
+  mutate(
+    month = if_else(str_detect(source, "jan"), "January", "July"),
+    year = str_extract(source, "\\d{4}"),  
+    year = as.integer(year) 
+  )
+
+# summarize the total number of data
+summary_table <- combined_data %>%
+  group_by(year, month, member_casual) %>%
+  summarise(total_rides = n(), .groups = "drop")
+
+
+# display the summary table
+summary_table
+
+```
+
+```{r}
+# find the top 5 popular starting station in July 2024
+
+top_stations_july_2024 <- combined_data %>%
+  filter(source == "july_2024") %>%
+  count(start_station_name, sort = TRUE) %>%
+  top_n(5, n)
+
+# display the top 5 stations
+top_stations_july_2024
+```
+```{r}
+# Plot median ride duration by day of the week, month, and year
+
+ggplot(combined_data, aes(x = weekdays, y = duration, fill = month)) +
+  stat_summary(fun = median, geom = "bar", position = "dodge") +
+  facet_wrap(~ year) +
+  labs(title = "Median Ride Duration by Day of Week, Month, and Year",
+       x = "Day of the Week", y = "Median Ride Duration (minutes)") +
+  theme_minimal()
+```
+
+```{r}
+# Filter for 2024 data
+data_2024 <- combined_data %>%
+  filter(year == "2024")
+
+# Plot distribution of ride duration by month, user type, and bike type
+ggplot(data_2024, aes(x = duration, fill = member_casual)) +
+  geom_histogram(bins = 50, position = "identity", alpha = 0.6) +
+  facet_grid(rideable_type ~ month) +
+  labs(title = "Ride Duration Distribution by Month, Membership, and Bike Type (2024)",
+       x = "Ride Duration (minutes)", y = "Count") +
+  theme_minimal()
+```
+

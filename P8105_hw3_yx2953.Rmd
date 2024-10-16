@@ -53,7 +53,7 @@ print(summary_table)
 
 # Step 5: Plot age distribution by sex and education
 ggplot(merged_df, aes(x = age, fill = sex)) +
-  geom_histogram(position = "dodge", bins = 20) +
+  geom_histogram(position = "dodge", bins=20) +
   facet_wrap(~ education) +
   labs(title = "Age Distribution by Sex and Education",
        x = "Age", y = "Count") +
@@ -161,20 +161,21 @@ ggplot(combined_data, aes(x = weekdays, y = duration, fill = month)) +
   facet_wrap(~ year) +
   labs(title = "Median Ride Duration by Day of Week, Month, and Year",
        x = "Day of the Week", y = "Median Ride Duration (minutes)") +
-  theme_minimal()
+  theme_minimal()+
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
 ```
 
 ```{r}
 # Filter for 2024 data
-data_2024 <- combined_data %>%
-  filter(year == "2024")
-
-# Plot distribution of ride duration by month, user type, and bike type
-ggplot(data_2024, aes(x = duration, fill = member_casual)) +
-  geom_histogram(bins = 50, position = "identity", alpha = 0.6) +
-  facet_grid(rideable_type ~ month) +
-  labs(title = "Ride Duration Distribution by Month, Membership, and Bike Type (2024)",
-       x = "Ride Duration (minutes)", y = "Count") +
+duration_distribution_plot <- combined_data %>%
+  filter(year == 2024) %>%
+  ggplot(aes(x = duration, fill = interaction(member_casual, rideable_type))) +
+  geom_histogram(bins = 20, position = "dodge", alpha= 0.7 )+
+  facet_wrap(~month) +
+  labs(title = "Ride Duration Distribution by Month, Membership Status, and Bike Type (2024)", x = "Duration (minutes)", y = "Count") +
   theme_minimal()
+
+print(duration_distribution_plot)
 ```
 

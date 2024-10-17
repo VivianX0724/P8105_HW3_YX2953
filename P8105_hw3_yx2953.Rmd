@@ -19,7 +19,7 @@ library(tidyverse)
 covar_path <- "Data File/nhanes_covar.csv"
 accel_path <- "Data File/nhanes_accel.csv"
 
-# Step 1: Clean and prepare demographic data, filter out the participants less than 21 and delete the missing ones
+# Clean and prepare demographic data, filter out the participants less than 21 and delete the missing ones
 covar_df <- read_csv(covar_path, skip = 4)
 colnames(covar_df) <- c("SEQN","SEX", "AGE", "BMI", "EDUCATION")
 covar_df <- covar_df %>%
@@ -36,13 +36,13 @@ covar_df <- covar_df %>%
 filter(age >= 21)%>%
 drop_na()
 
-# Step 2: Load and prepare accelerometer data
+# Load and prepare accelerometer data
 accel_df <- read_csv(accel_path)
 
-# Step 3: Merge accelerometer data with demographic data
+# Merge accelerometer data with demographic data
 merged_df <- inner_join(accel_df, covar_df, by = "SEQN")
 
-# Step 4: Create a summary table of men and women by education level
+# Create a summary table of men and women by education level
 summary_table <- merged_df %>%
   group_by(education, sex) %>%
   summarise(count = n()) %>%
@@ -51,19 +51,19 @@ summary_table <- merged_df %>%
 # Display the summary table
 print(summary_table)
 
-# Step 5: Plot age distribution by sex and education
+# Plot age distribution by sex and education
 ggplot(merged_df, aes(x = age, fill = sex)) +
-  geom_histogram(position = "dodge", bins=20) +
+  geom_histogram(position = "dodge", bins = 20) +
   facet_wrap(~ education) +
   labs(title = "Age Distribution by Sex and Education",
        x = "Age", y = "Count") +
   theme_minimal()
 
-# Step 6: Create total activity for each participant by summing across minutes
+# Create total activity for each participant by summing across minutes
 merged_df <- merged_df %>%
   mutate(total_activity = rowSums(select(., starts_with("min"))))
 
-# Step 7: Plot total activity against age, faceted by education and colored by sex
+# Plot total activity against age, faceted by education and colored by sex
 ggplot(merged_df, aes(x = age, y = total_activity, color = sex)) +
   geom_point(alpha = 0.5) +
   geom_smooth(method = "loess") +
@@ -72,7 +72,7 @@ ggplot(merged_df, aes(x = age, y = total_activity, color = sex)) +
        x = "Age", y = "Total Activity") +
   theme_minimal()
 
-# Step 8: Create a time-course plot of activity over a 24-hour period, colored by sex
+# Create a time-course plot of activity over a 24-hour period, colored by sex
 merged_df_long <- merged_df %>%
   pivot_longer(
     cols = starts_with("min"),
@@ -89,6 +89,46 @@ ggplot(merged_df_long, aes(x = minute, y = activity, color = sex)) +
        x = "Minute of the Day", y = "Activity (MIMS)") +
   theme_minimal()
 ```
+Comments on summary table of men and women by education level:
+
+	•	The number of men and women is fairly balanced in the “Less than high school” and “More than high school” categories.
+	•	However, for “High school equivalent” education, there are significantly more men compared to women. This could indicate differences in educational attainment patterns between men and women within this sample.
+	
+Comments on age distribution by sex and education:
+
+	Less than high school:
+	•	Both men and women show a nearly even distribution across a broad age range, with more accumulations in the older age groups (around 60–80 years).
+	•	The distributions of two sex are similar.
+  High school equivalent:
+	•	The distribution of women is more decentralized, while men show more clusters in specific age groups (around 20–40 years and 60–80 years).
+	More than high school:
+	•	The largest age group for men appears to be around 40–60 years, with representation across the 20–80 age range.
+	•	Women in this category are more evenly spread across all age groups, with a slight concentration around the 40–60 age.
+	
+More older individuals are less than high school educated, possibly reflecting past generations where fewer people completed high school. Conversely, younger people are more concentrated in the higher education categories, reflecting more recent educational improvement trends.
+
+Comment on the plot of total activity vs age by sex and  education:
+	1.	Less than High School:
+	•	For both men and women, total activity decreases with age, with a peak around the younger ages (20–30) and then a steep decline as age increases.
+	•	There is some difference between men and women, especially in older age groups, where men’s activity levels appear slightly higher than women’s.
+	•	The confidence intervals (gray shaded regions) widen as age increases, indicating greater variability in total activity among older individuals in this education category.
+	2.	High School Equivalent:
+	•	There is a more obvious age-related activity pattern in this group, where activity peaks around the age of 50 for both men and women, followed by a sharp decline after this age.
+	•	For younger individuals under 40, women’s activity levels appear higher than men’s, but the roles reverse for individuals above 50.
+	•	There is a large variance in total activity, especially between ages 40 to 70, indicating some individuals in this group remain highly active while others see a significant drop-off.
+	3.	More than High School:
+	•	Activity levels are relatively stable between men and women across different ages, with only a slight downward trend for both above 60. Both are with much smaller confidence intervals.
+	•	This category shows that individuals with higher education tend to maintain more consistent activity levels across their lifespan compared to those with lower education levels.
+	
+Comment on 24-hour activity time course by educationa dnd sex:
+	1.	General Daily Trend:
+	•	Across all education levels, both men and women show a sharp rise in activity starting early in the day, peaking around the middle of the day, and then gradually declining in the evening.
+	2.	Sex Differences:
+	•	In the “Less than high school” and “High school equivalent” categories, women (blue line) tend to have slightly higher activity levels than men (red line) throughout the day, particularly around midday.
+	•	In the “More than high school” category, women also show higher midday activity levels, but the difference is smaller compared to the other two groups.
+	3.	Education Patterns:
+	•	The shape of the activity curves is consistent across education levels, but individuals with higher education maintain higher activity levels throughout the day, particularly during midday, compared to those with lower education levels.
+
 
 Problem 3
 
@@ -142,6 +182,12 @@ summary_table
 
 ```
 
+Comments:
+ 1. Members vs. Casual Users: Members consistently take more rides than casual users, with a significant difference in both years.
+ 2. Seasonal Variation: Rides are more in July compared to January for both groups, showing more activity in the summer.
+ 3. Growth Over Time: Total rides increased from 2020 to 2024, with both members and casual users riding more, indicating growing popularity of the service.
+
+
 ```{r}
 # find the top 5 popular starting station in July 2024
 
@@ -154,6 +200,10 @@ top_stations_july_2024 <- combined_data %>%
 top_stations_july_2024
 ```
 ```{r}
+# coreect the orfer
+combined_data$weekdays <- factor(combined_data$weekdays, 
+                                 levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+
 # Plot median ride duration by day of the week, month, and year
 
 ggplot(combined_data, aes(x = weekdays, y = duration, fill = month)) +
@@ -166,12 +216,24 @@ theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ```
 
+Key Observations and comments:
+
+ 1. Seasonal Variation:
+ • Rides in July (blue bars) consistently have longer median durations than those in January (red bars) for both years, suggesting that people take longer rides in the summer.
+ 2. Day of the Week Patterns:
+ • In both 2020 and 2024, weekends (Saturday and Sunday) tend to have longer ride durations, with Sunday in July showing the longest durations.
+ • Weekdays generally show more consistent ride lengths, but still longer in July compared to January.
+ 3. Yearly Comparison:
+ • Ride durations in July 2024 are generally shorter than in July 2020, indicating a possible trend toward shorter rides over time.
+ • January ride durations remain relatively stable between 2020 and 2024.
+
+
 ```{r}
 # Filter for 2024 data
 duration_distribution_plot <- combined_data %>%
   filter(year == 2024) %>%
   ggplot(aes(x = duration, fill = interaction(member_casual, rideable_type))) +
-  geom_histogram(bins = 20, position = "dodge", alpha= 0.7 )+
+  geom_histogram(bins = 20, position = "stack", alpha= 0.7 )+
   facet_wrap(~month) +
   labs(title = "Ride Duration Distribution by Month, Membership Status, and Bike Type (2024)", x = "Duration (minutes)", y = "Count") +
   theme_minimal()
@@ -179,3 +241,15 @@ duration_distribution_plot <- combined_data %>%
 print(duration_distribution_plot)
 ```
 
+Key Observations and comments:
+
+	1.	Skewed Distribution:
+	•	The ride durations are heavily skewed to the right, with the vast majority of rides lasting less than 50 minutes. Very few rides last longer than 100 minutes, indicating that short rides are far more common.
+	2.	Membership and Bike Type:
+	•	Members (especially using electric bikes, represented in purple) tend to dominate the count of rides, particularly in July, suggesting that electric bikes are a popular option among members.
+	•	Casual riders (both classic and electric bikes) have lower ride counts compared to members. This trend is consistent across both months.
+	3.	Month Comparison:
+	•	Rides in July are significantly higher than in January for all, showing that people are more likely to use bikes during the summer months.
+	•	Electric bikes are particularly popular among members in July, with the highest count observed for this group.
+	4.	Classic vs. Electric Bikes:
+	•	Across both months, electric bikes (both casual and member riders) have higher counts compared to classic bikes, indicating a preference for electric bikes, especially for shorter rides.

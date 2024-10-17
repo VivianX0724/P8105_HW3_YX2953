@@ -217,9 +217,8 @@ files <- list(
 )
 
 # Add a 'source' column to track the original file
-names(data_list) <- names(files)
-data_list <- lapply(names(data_list), function(name) {
-  df <- data_list[[name]]
+data_list <- lapply(names(files), function(name) {
+  df <- files[[name]]
   df$source <- name
   return(df)
 })

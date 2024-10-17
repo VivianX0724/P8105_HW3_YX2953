@@ -2,7 +2,7 @@
 title: "P8105_HW3_YX2953"
 author: "Vivian XIA"
 date: "2024-10-13"
-output: html_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
